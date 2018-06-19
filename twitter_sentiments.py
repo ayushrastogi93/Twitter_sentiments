@@ -11,11 +11,18 @@ import re
 from nltk.corpus import stopwords
 from nltk.stem import PorterStemmer
 from nltk.tokenize import word_tokenize
+from functools import reduce
 stop_words = set(stopwords.words('english'))
 ps = PorterStemmer()
 train_tweets = pd.read_csv('train_tweets.csv') 
+#train_tweets2 = pd.read_csv('train_tweets2.csv')
+#train_tweets3  = pd.read_csv('train_tweets3.csv')
+#dfs = [train_tweets,train_tweets2,train_tweets3]
+#df_final = reduce(lambda left,right: pd.merge(left,right,on='id'), [dfs])
+#pd.DataFrame.to_csv(df_final, 'merged.txt', sep=',', index=False)
 
 def data_cleaing(train_tweets):
+    train_tweets.dropna()
     corpus = []
     for i in range(len(train_tweets)):
         review = re.sub('[^a-zA-Z]', ' ', train_tweets['tweet'][i])
@@ -28,9 +35,12 @@ def data_cleaing(train_tweets):
     return corpus
     
 # Creating the Bag of Words model
-from sklearn.feature_extraction.text import CountVectorizer
-cv = CountVectorizer(max_features=2500)
+#from sklearn.feature_extraction.text import CountVectorizer
+#cv = CountVectorizer(max_features = 2600)
 data_xl = data_cleaing(train_tweets)
+
+from sklearn.feature_extraction.text import TfidfVectorizer
+cv = TfidfVectorizer(min_df=1,stop_words = 'english')
 X = cv.fit_transform(data_xl).toarray()
 y = train_tweets.iloc[:, 1].values
 
@@ -46,9 +56,11 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.20, rand
 #from sklearn.naive_bayes import GaussianNB
 #classifier = GaussianNB()
 #from sklearn import linear_model
-#classifier = linear_model.LogisticRegression(C=1e5,solver= 'newton-cg',max_iter = 200)
+#classifier = linear_model.LogisticRegression(C =100, solver= 'newton-cg',max_iter = 200)
+
 from sklearn.ensemble import RandomForestClassifier
 classifier = RandomForestClassifier(n_estimators = 100, n_jobs=-1)
+
 classifier.fit(X_train, y_train)
 
 # Predicting the Test set results
@@ -61,7 +73,7 @@ f1_score = f1_score(y_test, y_pred)
 #cm = confusion_matrix(y_test, y_pred)
 #test_tweets.csv 
 test_tweets = pd.read_csv('test_tweets.csv') 
-test_ids = test_tweets.iloc[:,0] 
+test_ids = test_tweets.iloc[:,0]    
 X_testdata = cv.fit_transform(data_cleaing(test_tweets)).toarray()
 y_testdata = classifier.predict(X_testdata)
 
